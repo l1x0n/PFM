@@ -11,6 +11,21 @@ ctypes.windll.shcore.SetProcessDpiAwareness(True)
 def not_implemented():
     msbox.showinfo("PFM", "Эта функция пока не реализована")
 
+def load_directory(path):
+    tree.delete(*tree.get_children())
+
+    for item in os.listdir(path):
+        full_path = os.path.join(path, item)
+
+        if os.path.isdir(full_path):
+            size = ""
+            file_type = "Папка"
+        else:
+            size = os.path.getsize(full_path)
+            file_type = "Файл"
+    
+        tree.insert("", "end", values=(item, size, file_type))
+
 
 root = Tk()
 root.title("PFM")
@@ -67,7 +82,7 @@ top_menu.add_cascade(label="Вид", menu=view_menu)
 
 root.config(menu=top_menu)
 
-# просмотр фалов 
+# древо файлов
 container = Frame(root)
 container.pack(fill="both", expand=True)
 
@@ -78,6 +93,9 @@ tree.heading("name", text="Имя")
 tree.heading("size", text="Размер")
 tree.heading("type", text="Тип")
 tree.pack(fill="both", expand=True)
+
+current_path = os.getcwd()
+load_directory(current_path)
 
 #бинды
 root.bind("<Control-n>", lambda e: not_implemented())
