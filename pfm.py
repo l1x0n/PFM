@@ -11,6 +11,12 @@ ctypes.windll.shcore.SetProcessDpiAwareness(True)
 def not_implemented():
     msbox.showinfo("PFM", "Эта функция пока не реализована")
 
+def size_unit(size):
+    for unit in ["Б", "КБ", "МБ", "ГБ", "ТБ"]:
+        if size < 1024:
+            return f"{size:.2f} {unit}"
+        size /= 1024
+
 def load_directory(path):
     tree.delete(*tree.get_children())
 
@@ -22,6 +28,7 @@ def load_directory(path):
             file_type = "Папка"
         else:
             size = os.path.getsize(full_path)
+            size = size_unit(size)
             file_type = "Файл"
     
         tree.insert("", "end", values=(item, size, file_type))
