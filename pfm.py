@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import messagebox as msbox
 from tkinter import ttk
+from datetime import datetime
 import os
 import ctypes
 import pathlib
@@ -20,8 +21,17 @@ def size_unit(size):
 def load_directory(path):
     tree.delete(*tree.get_children())
 
-    for item in os.listdir(path):
+    items = os.listdir(path)
+    items.sort(key=lambda x:(
+        not os.path.isdir(os.path.join(path, x)),
+        x.lower()
+    ))
+
+    for item in items:
         full_path = os.path.join(path, item)
+
+        time = os.path.getmtime(full_path)
+        time = datetime.fromtimestamp(time).strftime("%d.%m.%Y %H:%M")
 
         if os.path.isdir(full_path):
             size = ""
@@ -31,13 +41,48 @@ def load_directory(path):
             size = size_unit(size)
             file_type = "Файл"
     
-        tree.insert("", "end", values=(item, size, file_type))
+        tree.insert("", "end", values=(item, time, file_type, size))
+
+def open_item(event):
+    global current_path
+
+    selected = tree.selection()
+    if not selected:
+        return
+    
+    item = tree.item(selected[0])
+    name = item["values"][0]
+    
+    path = os.path.join(current_path, name)
+
+    if os.path.isdir(path):
+        current_path = path
+        load_directory(current_path)
+    else:
+        os.startfile(path)
+
+def entry_path_load(event):
+    global current_path
+    path = path_var.get()
+    if os.path.exists(path):
+        current_path = path
+        load_directory(current_path)
+    
+
+def backward():
+    global current_path
+    current_path = pathlib.Path(current_path).parent
+    load_directory(current_path)
 
 
 root = Tk()
 root.title("PFM")
 root.geometry("700x500")
+root.iconbitmap("assets/PFM-icon.ico")
 
+current_path = os.getcwd()
+
+# верхнее меню 
 top_menu = Menu(root)
 
 # файл
@@ -87,29 +132,49 @@ top_menu.add_cascade(label="Файл", menu=file_menu)
 top_menu.add_cascade(label="Правка", menu=edit_menu)
 top_menu.add_cascade(label="Вид", menu=view_menu)
 
-root.config(menu=top_menu)
+# root.config(menu=top_menu)
+
+
+# кнопка назад и адресная строка
+nav_frame = Frame(root)
+nav_frame.pack(fill="x")
+
+back_button = Button(nav_frame, text="↑", command=backward)
+back_button.pack(side="left", padx=5, pady=5)
+back_button.config(width=2, height=1)
+
+path_var = StringVar(value=current_path)
+path_entry = Entry(nav_frame, textvariable=path_var)
+path_entry.pack(side="left", fill="x", expand=True, padx=5)
 
 # древо файлов
-container = Frame(root)
-container.pack(fill="both", expand=True)
+tree_frame = Frame(root)
+tree_frame.pack(fill="both", expand=True)
 
-columns = ("name", "size", "type")
+columns = ("name", "time", "type", "size")
 
-tree = ttk.Treeview(container, columns=columns, show="headings")
+tree = ttk.Treeview(tree_frame, columns=columns, show="headings")
 tree.heading("name", text="Имя")
-tree.heading("size", text="Размер")
+tree.heading("time", text="Дата изменения")
 tree.heading("type", text="Тип")
+tree.heading("size", text="Размер")
+tree.column("name", width=250, minwidth=150, anchor="w")
+tree.column("time", width=150, minwidth=100, anchor="center")
+tree.column("type", width=100, minwidth=80, anchor="center")
+tree.column("size", width=100, minwidth=80, anchor="e")
 tree.pack(fill="both", expand=True)
 
-current_path = os.getcwd()
-load_directory(current_path)
 
 #бинды
-root.bind("<Control-n>", lambda e: not_implemented())
-root.bind("<Alt-Return>", lambda e: not_implemented())
-root.bind("<Control-c>", lambda e: not_implemented())
-root.bind("<Control-x>", lambda e: not_implemented())
-root.bind("<Control-v>", lambda e: not_implemented())
-root.bind("<Delete>", lambda e: not_implemented())
+# root.bind("<Control-n>", lambda e: not_implemented())
+# root.bind("<Alt-Return>", lambda e: not_implemented())
+# root.bind("<Control-c>", lambda e: not_implemented())
+# root.bind("<Control-x>", lambda e: not_implemented())
+# root.bind("<Control-v>", lambda e: not_implemented())
+# root.bind("<Delete>", lambda e: not_implemented())
+path_entry.bind("<Return>", entry_path_load)
+tree.bind("<Double-1>", open_item)
 
+
+load_directory(current_path)
 root.mainloop()
