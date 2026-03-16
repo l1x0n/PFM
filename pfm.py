@@ -3,8 +3,9 @@ from tkinter import messagebox as msbox
 from tkinter import ttk
 from datetime import datetime
 import os
-import ctypes
+import shutil
 import pathlib
+import ctypes
 
 
 ctypes.windll.shcore.SetProcessDpiAwareness(True)
@@ -20,6 +21,7 @@ def size_unit(size):
 
 def load_directory(path):
     tree.delete(*tree.get_children())
+    path_var.set(path)
 
     items = os.listdir(path)
     items.sort(key=lambda x:(
@@ -60,6 +62,26 @@ def open_item(event):
         load_directory(current_path)
     else:
         os.startfile(path)
+
+def delete_item(event):
+    global current_path
+
+    selected = tree.selection()
+    if not selected:
+        return
+    
+    item = tree.item(selected[0])
+    name = item["values"][0]
+    
+    path = os.path.join(current_path, name)
+
+    if os.path.isdir(path):
+        shutil.rmtree(path)
+    else:
+        os.remove(path)
+        
+    load_directory(current_path)
+
 
 def entry_path_load(event):
     global current_path
@@ -174,6 +196,7 @@ tree.pack(fill="both", expand=True)
 # root.bind("<Delete>", lambda e: not_implemented())
 path_entry.bind("<Return>", entry_path_load)
 tree.bind("<Double-1>", open_item)
+tree.bind("<Delete>", delete_item)
 
 
 load_directory(current_path)
