@@ -7,6 +7,8 @@ import shutil
 import pathlib
 import ctypes
 
+app_icon = "assets/PFM-icon.ico"
+current_path = os.getcwd()
 
 ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
@@ -82,6 +84,56 @@ def delete_item(event):
         
     load_directory(current_path)
 
+def create_file_dialog():
+    global current_path
+
+    create_file_window = Toplevel(root)
+    create_file_window.title("Создание файла")
+    create_file_window.geometry("300x80")
+    create_file_window.iconbitmap(app_icon)
+
+    entry = Entry(create_file_window)
+    entry.pack(fill="x", padx=5, expand=True, side="top")
+
+    def create_file():
+        name = entry.get()
+        if name:
+            path = os.path.join(current_path, name)
+            open(path, "w").close
+            load_directory(current_path)
+            create_file_window.destroy()
+
+    control_frame = Frame(create_file_window)
+    control_frame.pack(fill="x", side="bottom")
+
+    Button(control_frame, text="Отмена", command=create_file_window.destroy).pack(side="right", padx=5, pady=5)
+    Button(control_frame, text="Создать", command=create_file).pack(side="right", padx=5, pady=5)
+
+def create_dir_dialog():
+    global current_path
+
+    create_dir_window = Toplevel(root)
+    create_dir_window.title("Создание папки")
+    create_dir_window.geometry("300x80")
+    create_dir_window.iconbitmap(app_icon)
+
+    entry = Entry(create_dir_window)
+    entry.pack(fill="x", padx=5, expand=True, side="top")
+
+    def create_dir():
+        name = entry.get()
+        if name:
+            path = os.path.join(current_path, name)
+            os.mkdir(path)
+            load_directory(current_path)
+            create_dir_window.destroy()
+
+    control_frame = Frame(create_dir_window)
+    control_frame.pack(fill="x", side=BOTTOM)
+
+    Button(control_frame, text="Отмена", command=create_dir_window.destroy).pack(side="right", padx=5, pady=5)
+    Button(control_frame, text="Создать", command=create_dir).pack(side="right", padx=5, pady=5)
+
 
 def entry_path_load(event):
     global current_path
@@ -89,7 +141,6 @@ def entry_path_load(event):
     if os.path.exists(path):
         current_path = path
         load_directory(current_path)
-    
 
 def backward():
     global current_path
@@ -100,9 +151,8 @@ def backward():
 root = Tk()
 root.title("PFM")
 root.geometry("700x500")
-root.iconbitmap("assets/PFM-icon.ico")
+root.iconbitmap(app_icon)
 
-current_path = os.getcwd()
 
 # верхнее меню 
 top_menu = Menu(root)
@@ -112,8 +162,8 @@ file_menu = Menu(top_menu, tearoff=0)
 file_menu.add_command(label="Новое окно", accelerator="Ctrl+N", command=not_implemented)
 file_create_menu = Menu(file_menu, tearoff=0)
 file_menu.add_cascade(label="Создать", menu=file_create_menu)
-file_create_menu.add_command(label="Файл", command=not_implemented)
-file_create_menu.add_command(label="Папку", command=not_implemented)
+file_create_menu.add_command(label="Файл", command=create_file_dialog)
+file_create_menu.add_command(label="Папку", command=create_dir_dialog)
 file_menu.add_command(label="Свойства", accelerator="Alt+Enter", command=not_implemented)
 
 file_menu.add_separator()
@@ -151,10 +201,9 @@ view_menu.add_checkbutton(label="Скрытые файлы", variable=view_show_
 
 # сборка верхнего меню
 top_menu.add_cascade(label="Файл", menu=file_menu)
-top_menu.add_cascade(label="Правка", menu=edit_menu)
-top_menu.add_cascade(label="Вид", menu=view_menu)
-
-# root.config(menu=top_menu)
+# top_menu.add_cascade(label="Правка", menu=edit_menu)
+# top_menu.add_cascade(label="Вид", menu=view_menu)
+root.config(menu=top_menu)
 
 
 # кнопка назад и адресная строка
