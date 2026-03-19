@@ -15,6 +15,15 @@ ctypes.windll.shcore.SetProcessDpiAwareness(True)
 def not_implemented():
     msbox.showinfo("PFM", "Эта функция пока не реализована")
 
+def center_window(win, width, height):
+    screen_width = win.winfo_screenwidth()
+    screen_height = win.winfo_screenheight()
+
+    x = (screen_width // 2) - (width // 2)
+    y = (screen_height // 2) - (height // 2)
+
+    win.geometry(f"{width}x{height}+{x}+{y}")
+
 def size_unit(size):
     for unit in ["Б", "КБ", "МБ", "ГБ", "ТБ"]:
         if size < 1024:
@@ -90,7 +99,7 @@ def create_file_dialog():
 
     create_file_window = Toplevel(root)
     create_file_window.title("Создание файла")
-    create_file_window.geometry("300x80")
+    center_window(create_file_window, 300, 80)
     create_file_window.iconbitmap(app_icon)
 
     entry = Entry(create_file_window)
@@ -115,7 +124,7 @@ def create_dir_dialog():
 
     create_dir_window = Toplevel(root)
     create_dir_window.title("Создание папки")
-    create_dir_window.geometry("300x80")
+    center_window(create_dir_window, 300, 80)
     create_dir_window.iconbitmap(app_icon)
 
     entry = Entry(create_dir_window)
@@ -191,7 +200,7 @@ def backward():
 
 root = Tk()
 root.title("PFM")
-root.geometry("700x500")
+center_window(root, 700, 500)
 root.iconbitmap(app_icon)
 
 
