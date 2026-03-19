@@ -159,6 +159,7 @@ def calc_drive():
         if bitmask & (1 << i):
             drives.append(chr(65 + i) + ":\\")
     return drives
+    
 
 def change_drive(path):
     global current_path
@@ -181,7 +182,7 @@ def show_drive_frame():
         return 
     
     drive_frame = Frame(root, bg="white", relief="ridge", borderwidth=2)
-    drive_frame.place(x=39, y=40, width=30, height=len(calc_drive())*27)
+    drive_frame.place(x=36, y=33)
 
     drive_frame.focus_set()
     drive_frame.bind("<FocusOut>", lambda e: hide_drive_frame())
@@ -257,7 +258,7 @@ root.config(menu=top_menu)
 
 
 # навигация
-nav_frame = Frame(root)
+nav_frame = Frame(root, relief="flat", bg="white", bd=0)
 nav_frame.pack(fill="x")
 
 back_button = Button(nav_frame, text="↑", width=2, height=1, command=backward)
