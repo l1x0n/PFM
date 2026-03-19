@@ -24,6 +24,7 @@ def size_unit(size):
 def load_directory(path):
     tree.delete(*tree.get_children())
     path_var.set(path)
+    drive_var.set(path[0:3])
 
     items = os.listdir(path)
     items.sort(key=lambda x:(
@@ -142,9 +143,49 @@ def entry_path_load(event):
         current_path = path
         load_directory(current_path)
 
+def calc_drive():
+    bitmask = ctypes.windll.kernel32.GetLogicalDrives()
+    drives = []
+    for i in range(26):
+        if bitmask & (1 << i):
+            drives.append(chr(65 + i) + ":\\")
+    return drives
+
+def change_drive(path):
+    global current_path
+    current_path = path
+    load_directory(path)
+    show_drive_frame()
+
+def hide_drive_frame():
+    global drive_frame
+    if drive_frame is not None:
+        drive_frame.destroy()
+        drive_frame = None
+
+def show_drive_frame():
+    global drive_frame
+
+    if drive_frame is not None:
+        drive_frame.destroy()
+        drive_frame = None
+        return 
+    
+    drive_frame = Frame(root, bg="white", relief="ridge", borderwidth=2)
+    drive_frame.place(x=39, y=40, width=30, height=len(calc_drive())*27)
+
+    drive_frame.focus_set()
+    drive_frame.bind("<FocusOut>", lambda e: hide_drive_frame())
+
+    drives = calc_drive()
+    for d in drives:
+        btn = Button(drive_frame, text=d, anchor="w", relief="groove", 
+            command=lambda path=d: change_drive(path))
+        btn.pack(fill="x")
+
 def backward():
     global current_path
-    current_path = pathlib.Path(current_path).parent
+    current_path = str(pathlib.Path(current_path).parent)
     load_directory(current_path)
 
 
@@ -206,13 +247,18 @@ top_menu.add_cascade(label="Файл", menu=file_menu)
 root.config(menu=top_menu)
 
 
-# кнопка назад и адресная строка
+# навигация
 nav_frame = Frame(root)
 nav_frame.pack(fill="x")
 
-back_button = Button(nav_frame, text="↑", command=backward)
+back_button = Button(nav_frame, text="↑", width=2, height=1, command=backward)
 back_button.pack(side="left", padx=5, pady=5)
-back_button.config(width=2, height=1)
+
+drive_var = StringVar(value=current_path[0]+":\\")
+change_button = Button(nav_frame, textvariable=drive_var, command=show_drive_frame)
+change_button.pack(side="left", padx=5, pady=5)
+
+drive_frame = None
 
 path_var = StringVar(value=current_path)
 path_entry = Entry(nav_frame, textvariable=path_var)
