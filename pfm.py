@@ -10,11 +10,8 @@ import ctypes
 app_icon = "assets/PFM-icon.ico"
 current_path = os.getcwd()
 
-ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
-def not_implemented():
-    msbox.showinfo("PFM", "Эта функция пока не реализована")
-
+# УТИЛИТЫ
 def center_window(win, width, height):
     screen_width = win.winfo_screenwidth()
     screen_height = win.winfo_screenheight()
@@ -30,6 +27,22 @@ def size_unit(size):
             return f"{round(size, 2):g} {unit}"
         size /= 1024
 
+def is_hidden(path):
+    attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
+    if (attrs & 2) and not view_show_hidden.get():
+        return True
+    return False
+
+def calc_drive():
+    bitmask = ctypes.windll.kernel32.GetLogicalDrives()
+    drives = []
+    for i in range(26):
+        if bitmask & (1 << i):
+            drives.append(chr(65 + i) + ":\\")
+    return drives
+
+
+# ЛОГИКА
 def load_directory(path):
     tree.delete(*tree.get_children())
     path_var.set(path)
@@ -59,12 +72,6 @@ def load_directory(path):
             file_type = "Файл"
     
         tree.insert("", "end", values=(item, time, file_type, size))
-
-def is_hidden(path):
-    attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
-    if (attrs & 2) and not view_show_hidden.get():
-        return True
-    return False
 
 def open_item(event):
     global current_path
@@ -102,6 +109,26 @@ def delete_item(event=None):
         
     load_directory(current_path)
 
+def backward():
+    global current_path
+    current_path = str(pathlib.Path(current_path).parent)
+    load_directory(current_path)
+
+def change_drive(path):
+    global current_path
+    current_path = path
+    load_directory(path)
+    show_drive_frame()
+
+def entry_path_load(event):
+    global current_path
+    path = path_var.get()
+    if os.path.exists(path):
+        current_path = path
+        load_directory(current_path)
+
+
+# ОКНА
 def create_file_dialog():
     global current_path
 
@@ -148,32 +175,13 @@ def create_dir_dialog():
             create_dir_window.destroy()
 
     control_frame = Frame(create_dir_window)
-    control_frame.pack(fill="x", side=BOTTOM)
+    control_frame.pack(fill="x", side="bottom")
 
     Button(control_frame, text="Отмена", command=create_dir_window.destroy).pack(side="right", padx=5, pady=5)
     Button(control_frame, text="Создать", command=create_dir).pack(side="right", padx=5, pady=5)
 
-def entry_path_load(event):
-    global current_path
-    path = path_var.get()
-    if os.path.exists(path):
-        current_path = path
-        load_directory(current_path)
 
-def calc_drive():
-    bitmask = ctypes.windll.kernel32.GetLogicalDrives()
-    drives = []
-    for i in range(26):
-        if bitmask & (1 << i):
-            drives.append(chr(65 + i) + ":\\")
-    return drives
-
-def change_drive(path):
-    global current_path
-    current_path = path
-    load_directory(path)
-    show_drive_frame()
-
+# УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ
 def hide_drive_frame():
     global drive_frame
     if drive_frame is not None:
@@ -200,11 +208,13 @@ def show_drive_frame():
             command=lambda path=d: change_drive(path))
         btn.pack(fill="x")
 
-def backward():
-    global current_path
-    current_path = str(pathlib.Path(current_path).parent)
-    load_directory(current_path)
 
+# ЗАГЛУШКА
+def not_implemented():
+    msbox.showinfo("PFM", "Эта функция пока не реализована")
+
+
+ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
 root = Tk()
 root.title("PFM")
@@ -217,7 +227,6 @@ top_menu = Menu(root)
 
 # файл
 file_menu = Menu(top_menu, tearoff=0)
-file_menu.add_command(label="Новое окно", accelerator="Ctrl+N", command=not_implemented)
 file_create_menu = Menu(file_menu, tearoff=0)
 file_menu.add_cascade(label="Создать", menu=file_create_menu)
 file_create_menu.add_command(label="Файл", command=create_file_dialog)
@@ -244,7 +253,6 @@ view_mode_var = StringVar(value="Таблица")
 view_mode_menu.add_radiobutton(label="Сетка", variable=view_mode_var)
 view_mode_menu.add_radiobutton(label="Список", variable=view_mode_var)
 view_mode_menu.add_radiobutton(label="Таблица", variable=view_mode_var)
-view_menu.add_cascade(label="Режим иконок", menu=view_mode_menu)
 
 view_sort_menu = Menu(view_menu, tearoff=0)
 view_sort_var = StringVar(value="По дате")
