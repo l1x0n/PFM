@@ -97,15 +97,14 @@ def delete_item(event=None):
     if not selected:
         return
     
-    item = tree.item(selected[0])
-    name = item["values"][0]
-    
-    path = os.path.join(current_path, name)
+    for i in selected: 
+        name = tree.item(i)["values"][0]
+        path = os.path.join(current_path, name)
 
-    if os.path.isdir(path):
-        shutil.rmtree(path)
-    else:
-        os.remove(path)
+        if os.path.isdir(path):
+            shutil.rmtree(path)
+        else:
+            os.remove(path)
         
     load_directory(current_path)
 
@@ -139,6 +138,7 @@ def create_file_dialog():
 
     entry = Entry(create_file_window)
     entry.pack(fill="x", padx=5, expand=True, side="top")
+    entry.focus_set()
 
     def create_file():
         name = entry.get()
@@ -165,6 +165,7 @@ def create_dir_dialog():
 
     entry = Entry(create_dir_window)
     entry.pack(fill="x", padx=5, expand=True, side="top")
+    entry.focus_set()
 
     def create_dir():
         name = entry.get()
@@ -182,12 +183,6 @@ def create_dir_dialog():
 
 
 # УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ
-def hide_drive_frame():
-    global drive_frame
-    if drive_frame is not None:
-        drive_frame.destroy()
-        drive_frame = None
-
 def show_drive_frame():
     global drive_frame
 
@@ -197,14 +192,14 @@ def show_drive_frame():
         return 
     
     drive_frame = Frame(root, bg="white", relief="ridge", borderwidth=2)
-    drive_frame.place(x=36, y=33)
+    drive_frame.place(x=34, y=33)
 
     drive_frame.focus_set()
-    drive_frame.bind("<FocusOut>", lambda e: hide_drive_frame())
+    drive_frame.bind("<FocusOut>", lambda e: show_drive_frame())
 
     drives = calc_drive()
     for d in drives:
-        btn = Button(drive_frame, text=d, anchor="w", relief="groove", 
+        btn = Button(drive_frame, text=d, anchor="w", width=2, relief="groove", 
             command=lambda path=d: change_drive(path))
         btn.pack(fill="x")
 
@@ -280,8 +275,8 @@ back_button = Button(nav_frame, text="↑", width=2, height=1, command=backward)
 back_button.pack(side="left", padx=5, pady=5)
 
 drive_var = StringVar(value=current_path[0]+":\\")
-change_button = Button(nav_frame, textvariable=drive_var, command=show_drive_frame)
-change_button.pack(side="left", padx=5, pady=5)
+change_button = Button(nav_frame, textvariable=drive_var, width=2, command=show_drive_frame)
+change_button.pack(side="left", padx=[2, 3], pady=5)
 
 drive_frame = None
 
