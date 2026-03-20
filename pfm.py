@@ -27,7 +27,7 @@ def center_window(win, width, height):
 def size_unit(size):
     for unit in ["Б", "КБ", "МБ", "ГБ", "ТБ"]:
         if size < 1024:
-            return f"{size:.2f} {unit}"
+            return f"{round(size, 2):g} {unit}"
         size /= 1024
 
 def load_directory(path):
@@ -44,6 +44,9 @@ def load_directory(path):
     for item in items:
         full_path = os.path.join(path, item)
 
+        if is_hidden(full_path):
+            continue
+
         time = os.path.getmtime(full_path)
         time = datetime.fromtimestamp(time).strftime("%d.%m.%Y %H:%M")
 
@@ -57,6 +60,12 @@ def load_directory(path):
     
         tree.insert("", "end", values=(item, time, file_type, size))
 
+def is_hidden(path):
+    attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
+    if (attrs & 2) and not view_show_hidden.get():
+        return True
+    return False
+
 def open_item(event):
     global current_path
 
@@ -66,7 +75,6 @@ def open_item(event):
     
     item = tree.item(selected[0])
     name = item["values"][0]
-    
     path = os.path.join(current_path, name)
 
     if os.path.isdir(path):
@@ -75,7 +83,7 @@ def open_item(event):
     else:
         os.startfile(path)
 
-def delete_item(event):
+def delete_item(event=None):
     global current_path
 
     selected = tree.selection()
@@ -109,7 +117,8 @@ def create_file_dialog():
         name = entry.get()
         if name:
             path = os.path.join(current_path, name)
-            open(path, "w").close
+            with open(path, "w") as f:
+                pass
             load_directory(current_path)
             create_file_window.destroy()
 
@@ -144,7 +153,6 @@ def create_dir_dialog():
     Button(control_frame, text="Отмена", command=create_dir_window.destroy).pack(side="right", padx=5, pady=5)
     Button(control_frame, text="Создать", command=create_dir).pack(side="right", padx=5, pady=5)
 
-
 def entry_path_load(event):
     global current_path
     path = path_var.get()
@@ -159,7 +167,6 @@ def calc_drive():
         if bitmask & (1 << i):
             drives.append(chr(65 + i) + ":\\")
     return drives
-    
 
 def change_drive(path):
     global current_path
@@ -228,7 +235,7 @@ edit_menu.add_command(label="Вырезать", accelerator="Ctrl+X", command=no
 edit_menu.add_command(label="Вставить", accelerator="Ctrl+V", command=not_implemented)
 
 edit_menu.add_separator()
-edit_menu.add_command(label="Удалить", accelerator="Del", command=not_implemented)
+edit_menu.add_command(label="Удалить", accelerator="Del", command=delete_item)
 
 # вид
 view_menu = Menu(top_menu, tearoff=0)
@@ -248,12 +255,12 @@ view_menu.add_cascade(label="Сортировка", menu=view_sort_menu)
 
 view_menu.add_separator()
 view_show_hidden = BooleanVar()
-view_menu.add_checkbutton(label="Скрытые файлы", variable=view_show_hidden)
+view_menu.add_checkbutton(label="Скрытые файлы", variable=view_show_hidden, command=lambda: load_directory(current_path))
 
 # сборка верхнего меню
 top_menu.add_cascade(label="Файл", menu=file_menu)
-# top_menu.add_cascade(label="Правка", menu=edit_menu)
-# top_menu.add_cascade(label="Вид", menu=view_menu)
+top_menu.add_cascade(label="Правка", menu=edit_menu)
+top_menu.add_cascade(label="Вид", menu=view_menu)
 root.config(menu=top_menu)
 
 
@@ -298,7 +305,7 @@ tree.pack(fill="both", expand=True)
 # root.bind("<Control-c>", lambda e: not_implemented())
 # root.bind("<Control-x>", lambda e: not_implemented())
 # root.bind("<Control-v>", lambda e: not_implemented())
-# root.bind("<Delete>", lambda e: not_implemented())
+root.bind("<F5>", lambda e: load_directory(current_path))
 path_entry.bind("<Return>", entry_path_load)
 tree.bind("<Double-1>", open_item)
 tree.bind("<Delete>", delete_item)
