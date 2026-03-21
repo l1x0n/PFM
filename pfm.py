@@ -50,30 +50,36 @@ def load_directory(path):
     path_var.set(path)
     drive_var.set(path[0:3])
 
-    items = os.listdir(path)
-    items.sort(key=lambda x:(
-        not os.path.isdir(os.path.join(path, x)),
-        x.lower()
-    ))
+    try:
+        items = os.listdir(path)
+        items.sort(key=lambda x:(
+            not os.path.isdir(os.path.join(path, x)),
+            x.lower()
+        ))
 
-    for item in items:
-        full_path = os.path.join(path, item)
+        for item in items:
+            full_path = os.path.join(path, item)
 
-        if is_hidden(full_path):
-            continue
+            if is_hidden(full_path):
+                continue
 
-        time = os.path.getmtime(full_path)
-        time = datetime.fromtimestamp(time).strftime("%d.%m.%Y %H:%M")
+            time = os.path.getmtime(full_path)
+            time = datetime.fromtimestamp(time).strftime("%d.%m.%Y %H:%M")
 
-        if os.path.isdir(full_path):
-            size = ""
-            file_type = "Папка"
-        else:
-            size = os.path.getsize(full_path)
-            size = size_unit(size)
-            file_type = "Файл"
-    
-        tree.insert("", "end", values=(item, time, file_type, size))
+            if os.path.isdir(full_path):
+                size = ""
+                file_type = "Папка"
+            else:
+                size = os.path.getsize(full_path)
+                size = size_unit(size)
+                file_type = "Файл"
+        
+            tree.insert("", "end", values=(item, time, file_type, size))
+    except PermissionError:
+        msbox.showerror("Ошибка", "Отказано в доступе")
+        backward()
+    except Exception as e:
+        msbox.showerror("Ошибка", f"Не удалось прочитать: {e}")
 
 def open_item(event):
     global current_path
@@ -103,10 +109,13 @@ def delete_item(event=None):
         name = tree.item(i)["values"][0]
         path = os.path.join(current_path, name)
 
-        if os.path.isdir(path):
-            shutil.rmtree(path)
-        else:
-            os.remove(path)
+        try:
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            else:
+                os.remove(path)
+        except OSError as e:
+            msbox.showerror("Ошибка удаления", e)
         
     load_directory(current_path)
 
