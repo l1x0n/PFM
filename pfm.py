@@ -195,12 +195,14 @@ def create_file_dialog():
     create_file_window.title("Создание файла")
     center_window(create_file_window, 300, 80)
     create_file_window.iconbitmap(app_icon)
+    create_file_window.transient(root)
+    create_file_window.grab_set()
 
     entry = Entry(create_file_window)
     entry.pack(fill="x", padx=5, expand=True, side="top")
     entry.focus_set()
 
-    def create_file():
+    def create_file(event=None):
         name = entry.get()
         if name:
             path = os.path.join(current_path, name)
@@ -208,6 +210,8 @@ def create_file_dialog():
                 pass
             load_directory(current_path)
             create_file_window.destroy()
+
+    create_file_window.bind("<Return>", create_file)
 
     control_frame = Frame(create_file_window)
     control_frame.pack(fill="x", side="bottom")
@@ -222,12 +226,14 @@ def create_dir_dialog():
     create_dir_window.title("Создание папки")
     center_window(create_dir_window, 300, 80)
     create_dir_window.iconbitmap(app_icon)
+    create_dir_window.transient(root)
+    create_dir_window.grab_set()
 
     entry = Entry(create_dir_window)
     entry.pack(fill="x", padx=5, expand=True, side="top")
     entry.focus_set()
 
-    def create_dir():
+    def create_dir(event=None):
         name = entry.get()
         if name:
             path = os.path.join(current_path, name)
@@ -235,11 +241,63 @@ def create_dir_dialog():
             load_directory(current_path)
             create_dir_window.destroy()
 
+    create_dir_window.bind("<Return>", create_dir)
+
     control_frame = Frame(create_dir_window)
     control_frame.pack(fill="x", side="bottom")
 
     Button(control_frame, text="Отмена", command=create_dir_window.destroy).pack(side="right", padx=5, pady=5)
     Button(control_frame, text="Создать", command=create_dir).pack(side="right", padx=5, pady=5)
+
+def rename_dialog(event=None):
+    global current_path
+
+    selected = tree.selection()
+    if not selected:
+        return
+        
+    item = tree.item(selected[0])
+    name = item["values"][0]
+    path = os.path.join(current_path, name)
+    name, ext = os.path.splitext(name)
+
+    rename_window = Toplevel(root)
+    rename_window.title("Переименовывание")
+    center_window(rename_window, 300, 80)
+    rename_window.iconbitmap(app_icon)
+    rename_window.transient(root)
+    rename_window.grab_set()
+
+    entry = Entry(rename_window)
+    entry.insert(0, name + ext)
+    entry.selection_range(0, len(name))
+    entry.icursor(len(name))
+    entry.pack(fill="x", padx=5, expand=True, side="top")
+    entry.focus_set()
+
+    def rename_item(event=None):
+        new_name = os.path.join(current_path, entry.get())
+        try:
+            if entry.get():
+                shutil.move(path, new_name)
+                load_directory(current_path)
+                rename_window.destroy()
+            else:
+                msbox.showinfo("Переименовывание", "Имя не может быть пустым")
+                rename_window.destroy()
+                rename_dialog()
+        except Exception as e:
+            msbox.showerror("Ошибка", f"Не удалось переименовать: {e}")
+            rename_window.destroy()
+            rename_dialog()
+
+    rename_window.bind("<Return>", rename_item)
+    
+    control_frame = Frame(rename_window)
+    control_frame.pack(fill="x", side="bottom")
+
+    Button(control_frame, text="Отмена", command=rename_window.destroy).pack(side="right", padx=5, pady=5)
+    Button(control_frame, text="Переименовать", command=rename_item).pack(side="right", padx=5, pady=5)
 
 
 # УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ
@@ -255,7 +313,7 @@ def show_drive_frame():
     drive_frame.place(x=34, y=33)
 
     drive_frame.focus_set()
-    drive_frame.bind("<FocusOut>", lambda e: show_drive_frame())
+    drive_frame.bind("<FocusOut>", show_drive_frame)
 
     drives = calc_drive()
     for d in drives:
@@ -297,6 +355,9 @@ edit_menu = Menu(top_menu, tearoff=0)
 edit_menu.add_command(label="Копировать", accelerator="Ctrl+C", command=copy)
 edit_menu.add_command(label="Вырезать", accelerator="Ctrl+X", command=cut)
 edit_menu.add_command(label="Вставить", accelerator="Ctrl+V", command=paste)
+
+edit_menu.add_separator()
+edit_menu.add_command(label="Переименовать", accelerator="F2", command=rename_dialog)
 
 edit_menu.add_separator()
 edit_menu.add_command(label="Удалить", accelerator="Del", command=delete_item)
@@ -367,9 +428,10 @@ root.bind("<Control-c>", copy)
 root.bind("<Control-x>", cut)
 root.bind("<Control-v>", paste)
 root.bind("<F5>", lambda e: load_directory(current_path))
-path_entry.bind("<Return>", entry_path_load)
 tree.bind("<Double-1>", open_item)
 tree.bind("<Delete>", delete_item)
+tree.bind("<F2>", rename_dialog)
+path_entry.bind("<Return>", entry_path_load)
 
 
 load_directory(current_path)
