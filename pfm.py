@@ -9,6 +9,8 @@ import ctypes
 
 app_icon = "assets/PFM-icon.ico"
 current_path = os.getcwd()
+clipboard = []
+is_cut = False
 
 
 # УТИЛИТЫ
@@ -107,6 +109,55 @@ def delete_item(event=None):
             os.remove(path)
         
     load_directory(current_path)
+
+def copy(event=None):
+    global current_path
+    global clipboard
+    global is_cut
+
+    clipboard = []
+    is_cut = False
+
+    selected = tree.selection()
+    if not selected:
+        return
+    
+    for i in selected: 
+        name = tree.item(i)["values"][0]
+        path = os.path.join(current_path, name)
+        clipboard.append(path)
+
+def paste(event=None):
+    global current_path
+    global clipboard
+    global is_cut
+
+    for i in clipboard:
+        goal = os.path.join(current_path, os.path.basename(i))
+
+        if is_cut:
+            shutil.move(i, goal)
+        else:
+            if os.path.exists(goal):
+                if os.path.isdir(goal):
+                    shutil.rmtree(goal)
+                else:
+                    os.remove(goal)
+
+            if os.path.isdir(i):
+                shutil.copytree(i, goal)
+            else:
+                shutil.copy2(i, goal)
+    if is_cut:
+        clipboard = []
+        is_cut = False
+
+    load_directory(current_path)
+
+def cut(event=None):
+    global is_cut
+    copy()
+    is_cut = True
 
 def backward():
     global current_path
@@ -234,9 +285,9 @@ file_menu.add_command(label="Выход", accelerator="Alt+F4", command=root.qui
 
 # правка
 edit_menu = Menu(top_menu, tearoff=0)
-edit_menu.add_command(label="Копировать", accelerator="Ctrl+C", command=not_implemented)
-edit_menu.add_command(label="Вырезать", accelerator="Ctrl+X", command=not_implemented)
-edit_menu.add_command(label="Вставить", accelerator="Ctrl+V", command=not_implemented)
+edit_menu.add_command(label="Копировать", accelerator="Ctrl+C", command=copy)
+edit_menu.add_command(label="Вырезать", accelerator="Ctrl+X", command=cut)
+edit_menu.add_command(label="Вставить", accelerator="Ctrl+V", command=paste)
 
 edit_menu.add_separator()
 edit_menu.add_command(label="Удалить", accelerator="Del", command=delete_item)
@@ -303,11 +354,9 @@ tree.pack(fill="both", expand=True)
 
 
 #бинды
-# root.bind("<Control-n>", lambda e: not_implemented())
-# root.bind("<Alt-Return>", lambda e: not_implemented())
-# root.bind("<Control-c>", lambda e: not_implemented())
-# root.bind("<Control-x>", lambda e: not_implemented())
-# root.bind("<Control-v>", lambda e: not_implemented())
+root.bind("<Control-c>", copy)
+root.bind("<Control-x>", cut)
+root.bind("<Control-v>", paste)
 root.bind("<F5>", lambda e: load_directory(current_path))
 path_entry.bind("<Return>", entry_path_load)
 tree.bind("<Double-1>", open_item)
