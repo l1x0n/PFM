@@ -23,6 +23,12 @@ def center_window(win, width, height):
 
     win.geometry(f"{width}x{height}+{x}+{y}")
 
+def set_icon(win):
+    if os.path.exists(app_icon):
+        win.iconbitmap(app_icon)
+    else:
+        pass
+
 def size_unit(size):
     for unit in ["Б", "КБ", "МБ", "ГБ", "ТБ"]:
         if size < 1024:
@@ -194,7 +200,7 @@ def create_file_dialog():
     create_file_window = Toplevel(root)
     create_file_window.title("Создание файла")
     center_window(create_file_window, 300, 80)
-    create_file_window.iconbitmap(app_icon)
+    set_icon(create_file_window)
     create_file_window.transient(root)
     create_file_window.grab_set()
 
@@ -225,7 +231,7 @@ def create_dir_dialog():
     create_dir_window = Toplevel(root)
     create_dir_window.title("Создание папки")
     center_window(create_dir_window, 300, 80)
-    create_dir_window.iconbitmap(app_icon)
+    set_icon(create_dir_window)
     create_dir_window.transient(root)
     create_dir_window.grab_set()
 
@@ -264,7 +270,7 @@ def rename_dialog(event=None):
     rename_window = Toplevel(root)
     rename_window.title("Переименовывание")
     center_window(rename_window, 300, 80)
-    rename_window.iconbitmap(app_icon)
+    set_icon(rename_window)
     rename_window.transient(root)
     rename_window.grab_set()
 
@@ -332,7 +338,7 @@ ctypes.windll.shcore.SetProcessDpiAwareness(True)
 root = Tk()
 root.title("PFM")
 center_window(root, 700, 500)
-root.iconbitmap(app_icon)
+set_icon(root)
 
 
 # верхнее меню 
