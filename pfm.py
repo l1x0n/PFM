@@ -319,7 +319,7 @@ def show_drive_frame():
     drive_frame.place(x=34, y=33)
 
     drive_frame.focus_set()
-    drive_frame.bind("<FocusOut>", show_drive_frame)
+    drive_frame.bind("<FocusOut>", lambda e: show_drive_frame())
 
     drives = calc_drive()
     for d in drives:
