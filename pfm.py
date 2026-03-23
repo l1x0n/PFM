@@ -51,6 +51,21 @@ def calc_drive():
 
 
 # ЛОГИКА
+def sort_items(path, items, mode, asc):
+    rev = (asc == "По убыванию")
+
+    if mode == "По имени":
+            items.sort(key=lambda x: x.lower(), reverse=not rev)
+            items.sort(key=lambda x: not os.path.isdir(os.path.join(path, x)))
+    elif mode == "По дате":
+            items.sort(key=lambda x: os.path.getmtime(os.path.join(path, x)), reverse=rev)
+            items.sort(key=lambda x: not os.path.isdir(os.path.join(path, x)))
+    elif mode == "По размеру":
+            items.sort(key=lambda x: os.path.getsize(os.path.join(path, x)), reverse=rev)
+            items.sort(key=lambda x: not os.path.isdir(os.path.join(path, x)))
+
+    return items
+
 def load_directory(path):
     tree.delete(*tree.get_children())
     path_var.set(path)
@@ -58,10 +73,7 @@ def load_directory(path):
 
     try:
         items = os.listdir(path)
-        items.sort(key=lambda x:(
-            not os.path.isdir(os.path.join(path, x)),
-            x.lower()
-        ))
+        items = sort_items(path, items, view_sort_var.get(), view_order_var.get())
 
         for item in items:
             full_path = os.path.join(path, item)
@@ -377,10 +389,15 @@ view_mode_menu.add_radiobutton(label="Список", variable=view_mode_var)
 view_mode_menu.add_radiobutton(label="Таблица", variable=view_mode_var)
 
 view_sort_menu = Menu(view_menu, tearoff=0)
-view_sort_var = StringVar(value="По дате")
-view_sort_menu.add_radiobutton(label="По имени", variable=view_sort_var)
-view_sort_menu.add_radiobutton(label="По размеру", variable=view_sort_var)
-view_sort_menu.add_radiobutton(label="По дате", variable=view_sort_var)
+view_sort_var = StringVar(value="По имени")
+view_sort_menu.add_radiobutton(label="По имени", variable=view_sort_var, command=lambda: load_directory(current_path))
+view_sort_menu.add_radiobutton(label="По дате", variable=view_sort_var, command=lambda: load_directory(current_path))
+view_sort_menu.add_radiobutton(label="По размеру", variable=view_sort_var, command=lambda: load_directory(current_path))
+
+view_sort_menu.add_separator()
+view_order_var = StringVar(value="По убыванию")
+view_sort_menu.add_radiobutton(label="По возрастанию", variable=view_order_var, command=lambda: load_directory(current_path))
+view_sort_menu.add_radiobutton(label="По убыванию", variable=view_order_var, command=lambda: load_directory(current_path))
 view_menu.add_cascade(label="Сортировка", menu=view_sort_menu)
 
 view_menu.add_separator()
