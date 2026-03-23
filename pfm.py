@@ -99,7 +99,7 @@ def load_directory(path):
     except Exception as e:
         msbox.showerror("Ошибка", f"Не удалось прочитать: {e}")
 
-def open_item(event):
+def open_item(event=None):
     global current_path
 
     selected = tree.selection()
@@ -165,7 +165,9 @@ def paste(event=None):
         if is_cut:
             shutil.move(i, goal)
         else:
-            if os.path.exists(goal):
+            if os.path.abspath(i) == os.path.abspath(goal):
+                continue
+            elif os.path.exists(goal):
                 if os.path.isdir(goal):
                     shutil.rmtree(goal)
                 else:
@@ -339,6 +341,17 @@ def show_drive_frame():
             command=lambda path=d: change_drive(path))
         btn.pack(fill="x")
 
+def show_context_menu(event):
+    item = tree.identify_row(event.y)
+
+    if item:
+        tree.selection_set(item)   
+        tree.focus(item)
+    else:
+        tree.selection_remove(tree.selection())
+    
+    context_menu.tk_popup(event.x_root, event.y_root)
+    context_menu.grab_release()
 
 # ЗАГЛУШКА
 def not_implemented():
@@ -376,17 +389,10 @@ edit_menu.add_command(label="Вставить", accelerator="Ctrl+V", command=pa
 
 edit_menu.add_separator()
 edit_menu.add_command(label="Переименовать", accelerator="F2", command=rename_dialog)
-
-edit_menu.add_separator()
 edit_menu.add_command(label="Удалить", accelerator="Del", command=delete_item)
 
 # вид
 view_menu = Menu(top_menu, tearoff=0)
-view_mode_menu = Menu(view_menu, tearoff=0)
-view_mode_var = StringVar(value="Таблица")
-view_mode_menu.add_radiobutton(label="Сетка", variable=view_mode_var)
-view_mode_menu.add_radiobutton(label="Список", variable=view_mode_var)
-view_mode_menu.add_radiobutton(label="Таблица", variable=view_mode_var)
 
 view_sort_menu = Menu(view_menu, tearoff=0)
 view_sort_var = StringVar(value="По имени")
@@ -445,12 +451,46 @@ tree.column("type", width=100, minwidth=80, anchor="center")
 tree.column("size", width=100, minwidth=80, anchor="e")
 tree.pack(fill="both", expand=True)
 
+# контекстное меню
+context_menu = Menu(root, tearoff=0)
+
+context_menu.add_command(label="Открыть", command=open_item)
+
+context_menu.add_separator()
+context_menu.add_command(label="Копировать", command=copy)
+context_menu.add_command(label="Вырезать", command=cut)
+context_menu.add_command(label="Вставить", command=paste, state= "normal" if clipboard else "disabled")
+
+context_menu.add_separator()
+context_menu.add_command(label="Переименовать", command=rename_dialog)
+context_menu.add_command(label="Удалить", command=delete_item)
+
+context_menu.add_separator()
+context_sort_menu = Menu(context_menu, tearoff=0)
+context_sort_menu.add_radiobutton(label="По имени", variable=view_sort_var, command=lambda: load_directory(current_path))
+context_sort_menu.add_radiobutton(label="По дате", variable=view_sort_var, command=lambda: load_directory(current_path))
+context_sort_menu.add_radiobutton(label="По размеру", variable=view_sort_var, command=lambda: load_directory(current_path))
+
+context_sort_menu.add_separator()
+context_sort_menu.add_radiobutton(label="По возрастанию", variable=view_order_var, command=lambda: load_directory(current_path))
+context_sort_menu.add_radiobutton(label="По убыванию", variable=view_order_var, command=lambda: load_directory(current_path))
+context_menu.add_cascade(label="Сортировка", menu=context_sort_menu)
+
+context_menu.add_separator()
+context_create_menu = Menu(file_menu, tearoff=0)
+context_create_menu.add_command(label="Файл", command=create_file_dialog)
+context_create_menu.add_command(label="Папку", command=create_dir_dialog)
+context_menu.add_cascade(label="Создать", menu=context_create_menu)
+
+context_menu.add_separator()
+context_menu.add_command(label="Свойства", command=not_implemented)
 
 #бинды
 root.bind("<Control-c>", copy)
 root.bind("<Control-x>", cut)
 root.bind("<Control-v>", paste)
 root.bind("<F5>", lambda e: load_directory(current_path))
+tree.bind("<Button-3>", show_context_menu)
 tree.bind("<Double-1>", open_item)
 tree.bind("<Delete>", delete_item)
 tree.bind("<F2>", rename_dialog)
