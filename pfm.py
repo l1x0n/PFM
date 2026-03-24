@@ -342,14 +342,40 @@ def show_drive_frame():
         btn.pack(fill="x")
 
 def show_context_menu(event):
+    context_menu.delete(0, "end")
     item = tree.identify_row(event.y)
-
     if item:
         tree.selection_set(item)   
         tree.focus(item)
+        context_menu.add_command(label="Открыть", command=open_item)
+        context_menu.add_separator()
+        context_menu.add_command(label="Копировать", command=copy)
+        context_menu.add_command(label="Вырезать", command=cut)
+        context_menu.add_separator()
+        context_menu.add_command(label="Переименовать", command=rename_dialog)
+        context_menu.add_command(label="Удалить", command=delete_item)
     else:
         tree.selection_remove(tree.selection())
-    
+        if clipboard:
+            context_menu.add_command(label="Вставить", command=paste)
+            context_menu.add_separator()
+        context_sort_menu = Menu(context_menu, tearoff=0)
+        context_sort_menu.add_radiobutton(label="По имени", variable=view_sort_var, command=lambda: load_directory(current_path))
+        context_sort_menu.add_radiobutton(label="По дате", variable=view_sort_var, command=lambda: load_directory(current_path))
+        context_sort_menu.add_radiobutton(label="По размеру", variable=view_sort_var, command=lambda: load_directory(current_path))
+
+        context_sort_menu.add_separator()
+        context_sort_menu.add_radiobutton(label="По возрастанию", variable=view_order_var, command=lambda: load_directory(current_path))
+        context_sort_menu.add_radiobutton(label="По убыванию", variable=view_order_var, command=lambda: load_directory(current_path))
+        context_menu.add_cascade(label="Сортировка", menu=context_sort_menu)
+        context_menu.add_separator()
+        context_create_menu = Menu(context_menu, tearoff=0)
+        context_create_menu.add_command(label="Файл", command=create_file_dialog)
+        context_create_menu.add_command(label="Папку", command=create_dir_dialog)
+        context_menu.add_cascade(label="Создать", menu=context_create_menu)
+    context_menu.add_separator()
+    context_menu.add_command(label="Свойства", command=not_implemented)
+
     context_menu.tk_popup(event.x_root, event.y_root)
     context_menu.grab_release()
 
@@ -453,37 +479,6 @@ tree.pack(fill="both", expand=True)
 
 # контекстное меню
 context_menu = Menu(root, tearoff=0)
-
-context_menu.add_command(label="Открыть", command=open_item)
-
-context_menu.add_separator()
-context_menu.add_command(label="Копировать", command=copy)
-context_menu.add_command(label="Вырезать", command=cut)
-context_menu.add_command(label="Вставить", command=paste, state= "normal" if clipboard else "disabled")
-
-context_menu.add_separator()
-context_menu.add_command(label="Переименовать", command=rename_dialog)
-context_menu.add_command(label="Удалить", command=delete_item)
-
-context_menu.add_separator()
-context_sort_menu = Menu(context_menu, tearoff=0)
-context_sort_menu.add_radiobutton(label="По имени", variable=view_sort_var, command=lambda: load_directory(current_path))
-context_sort_menu.add_radiobutton(label="По дате", variable=view_sort_var, command=lambda: load_directory(current_path))
-context_sort_menu.add_radiobutton(label="По размеру", variable=view_sort_var, command=lambda: load_directory(current_path))
-
-context_sort_menu.add_separator()
-context_sort_menu.add_radiobutton(label="По возрастанию", variable=view_order_var, command=lambda: load_directory(current_path))
-context_sort_menu.add_radiobutton(label="По убыванию", variable=view_order_var, command=lambda: load_directory(current_path))
-context_menu.add_cascade(label="Сортировка", menu=context_sort_menu)
-
-context_menu.add_separator()
-context_create_menu = Menu(file_menu, tearoff=0)
-context_create_menu.add_command(label="Файл", command=create_file_dialog)
-context_create_menu.add_command(label="Папку", command=create_dir_dialog)
-context_menu.add_cascade(label="Создать", menu=context_create_menu)
-
-context_menu.add_separator()
-context_menu.add_command(label="Свойства", command=not_implemented)
 
 #бинды
 root.bind("<Control-c>", copy)
