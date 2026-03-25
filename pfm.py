@@ -51,8 +51,14 @@ def calc_drive():
             drives.append(chr(65 + i) + ":\\")
     return drives
 
-def calc_dir_size():
-    pass
+def calc_dir_size(path):
+    size = 0
+    for dirpath, dirnames, filenames in os.walk(path):
+        for f in filenames:
+            filepath = os.path.join(dirpath, f)
+            if os.path.exists(filepath):
+                size += os.path.getsize(filepath)
+    return size
 
 
 # ЛОГИКА
@@ -347,7 +353,7 @@ def properties():
 
     if os.path.isdir(path):
         file_type = "Папка"
-        size = "-"
+        size = size_unit(calc_dir_size(path))
     else:
         file_type = "Файл"                                              
         size = size_unit(os.path.getsize(path))
