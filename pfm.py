@@ -32,10 +32,11 @@ def set_icon(win):
         pass
 
 def size_unit(size):
-    for unit in ["Б", "КБ", "МБ", "ГБ", "ТБ"]:
+    for unit in ["Б", "КБ", "МБ", "ГБ", "ТБ", "ПБ"]:
         if size < 1024:
             return f"{round(size, 2):g} {unit}"
         size /= 1024
+        return f"{round(size, 2):g} {unit}"
 
 def is_hidden(path):
     attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
@@ -306,26 +307,29 @@ def rename_dialog(event=None):
     entry.pack(fill="x", padx=5, expand=True, side="top")
     entry.focus_set()
 
+    error_label = ttk.Label(rename_window, text="", foreground="red")
+    error_label.pack(padx=5, pady=0, side="top", anchor="w")
+
     def rename_item(event=None):
         new_name = os.path.join(current_path, entry.get())
+        error_label.config(text="")
+        
+        if not entry.get():
+            error_label.config(text="Имя не может быть пустым")
+            entry.focus_set()
+            return
+        if os.path.exists(new_name) and entry.get() != name + ext:
+            error_label.config(text="Файл с таким именем уже существует")
+            entry.focus_set()
+            return
         try:
-            if os.path.exists(new_name) and entry.get() != name + ext:
-                msbox.showerror("Ошибка", "Файл с таким именем уже существует")
-                rename_window.destroy()
-                rename_dialog()
-            else:
-                if entry.get():
-                    shutil.move(path, new_name)
-                    load_directory(current_path)
-                    rename_window.destroy()
-                else:
-                    msbox.showinfo("Переименовывание", "Имя не может быть пустым")
-                    rename_window.destroy()
-                    rename_dialog()
-        except Exception as e:
-            msbox.showerror("Ошибка", f"Не удалось переименовать: {e}")
+            if entry.get() != name + ext:
+                shutil.move(path, new_name)
+            load_directory(current_path)
             rename_window.destroy()
-            rename_dialog()
+        except Exception as e:
+            error_label.config(text=f"Ошибка: {e}")
+            entry.focus_set()
 
     rename_window.bind("<Return>", rename_item)
     
@@ -370,8 +374,11 @@ def properties():
     prop_window.focus_set()
 
     entry = Entry(prop_window)
-    entry.pack(fill="x", padx=10, pady=30, side="top")
+    entry.pack(fill="x", padx=10, pady=[30, 5], side="top")
     entry.insert(0, name)
+
+    error_label = ttk.Label(prop_window, text="", foreground="red")
+    error_label.pack(padx=10, pady=0, side="top", anchor="w")
 
     ttk.Separator(prop_window, orient="horizontal").pack(fill="x", padx=10, pady=5, side="top")
     ttk.Label(prop_window, text=f"Тип: {file_type}").pack(padx=10, pady=5, side="top", anchor="w")
@@ -399,21 +406,24 @@ def properties():
 
     def prop_apply():
         new_name = os.path.join(location, entry.get())
+        error_label.config(text="")
+
+        if not entry.get():
+            error_label.config(text="Имя не может быть пустым")
+            entry.focus_set()
+            return
+        if os.path.exists(new_name) and entry.get() != name:
+            error_label.config(text="Файл с таким именем уже существует")
+            entry.focus_set()
+            return
         try:
-            if os.path.exists(new_name) and entry.get() != name:
-                msbox.showerror("Ошибка", "Файл с таким именем уже существует")
-                prop_window.destroy()
-            else:
-                if entry.get():
-                    shutil.move(path, new_name)
-                    load_directory(current_path)
-                else:
-                    prop_window.destroy()
+            if entry.get() != name:
+                shutil.move(path, new_name)
         except Exception as e:
-            msbox.showerror("Ошибка", f"Не удалось переименовать: {e}")
-            prop_window.destroy()
+            error_label.config(text=f"Ошибка: {e}")
+            entry.focus_set()
         
-        attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
+        attrs = ctypes.windll.kernel32.GetFileAttributesW(new_name)
         
         if var_readonly.get():
             attrs |= 1
