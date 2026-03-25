@@ -1,17 +1,19 @@
 from tkinter import *
 from tkinter import messagebox as msbox
 from tkinter import ttk
+from tkinter import font
 from datetime import datetime
 import os
 import shutil
 import pathlib
 import ctypes
+import locale
 
 app_icon = "assets/PFM-icon.ico"
 current_path = os.getcwd()
 clipboard = []
 is_cut = False
-
+locale.setlocale(locale.LC_TIME, 'rus_rus')
 
 # УТИЛИТЫ
 def center_window(win, width, height):
@@ -48,6 +50,9 @@ def calc_drive():
         if bitmask & (1 << i):
             drives.append(chr(65 + i) + ":\\")
     return drives
+
+def calc_dir_size():
+    pass
 
 
 # ЛОГИКА
@@ -298,14 +303,19 @@ def rename_dialog(event=None):
     def rename_item(event=None):
         new_name = os.path.join(current_path, entry.get())
         try:
-            if entry.get():
-                shutil.move(path, new_name)
-                load_directory(current_path)
-                rename_window.destroy()
-            else:
-                msbox.showinfo("Переименовывание", "Имя не может быть пустым")
+            if os.path.exists(new_name) and entry.get() != name + ext:
+                msbox.showerror("Ошибка", "Файл с таким именем уже существует")
                 rename_window.destroy()
                 rename_dialog()
+            else:
+                if entry.get():
+                    shutil.move(path, new_name)
+                    load_directory(current_path)
+                    rename_window.destroy()
+                else:
+                    msbox.showinfo("Переименовывание", "Имя не может быть пустым")
+                    rename_window.destroy()
+                    rename_dialog()
         except Exception as e:
             msbox.showerror("Ошибка", f"Не удалось переименовать: {e}")
             rename_window.destroy()
@@ -318,6 +328,104 @@ def rename_dialog(event=None):
 
     Button(control_frame, text="Отмена", command=rename_window.destroy).pack(side="right", padx=5, pady=5)
     Button(control_frame, text="Переименовать", command=rename_item).pack(side="right", padx=5, pady=5)
+
+def properties():
+    selected = tree.selection()
+    if not selected:
+        return
+    
+    item = tree.item(selected[0])
+    name = item["values"][0]
+    path = os.path.join(current_path, name)
+
+    location = os.path.dirname(path)
+    ctime = os.path.getctime(path)
+    ctime = datetime.fromtimestamp(ctime).strftime("%A, %d.%m.%Y %H:%M:%S")
+    attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
+    readonly = 1 if (attrs & 1) else 0
+    hidden = 1 if (attrs & 2) else 0
+
+    if os.path.isdir(path):
+        file_type = "Папка"
+        size = "-"
+    else:
+        file_type = "Файл"                                              
+        size = size_unit(os.path.getsize(path))
+        mtime = os.path.getmtime(path)
+        mtime = datetime.fromtimestamp(mtime).strftime("%A, %d.%m.%Y %H:%M:%S")
+        atime = os.path.getatime(path)
+        atime = datetime.fromtimestamp(atime).strftime("%A, %d.%m.%Y %H:%M:%S")
+
+
+    prop_window = Toplevel(root)
+    prop_window.title("Свойства")
+    center_window(prop_window, 400, 400)
+    set_icon(prop_window)
+    prop_window.focus_set()
+
+    entry = Entry(prop_window)
+    entry.pack(fill="x", padx=10, pady=30, side="top")
+    entry.insert(0, name)
+
+    ttk.Separator(prop_window, orient="horizontal").pack(fill="x", padx=10, pady=5, side="top")
+    ttk.Label(prop_window, text=f"Тип: {file_type}").pack(padx=10, pady=5, side="top", anchor="w")
+    ttk.Label(prop_window, text=f"Расположение: {location}").pack(padx=10, pady=5, side="top", anchor="w")
+    ttk.Label(prop_window, text=f"Размер: {size}").pack(padx=10, pady=5, side="top", anchor="w")
+
+    ttk.Separator(prop_window, orient="horizontal").pack(fill="x", padx=10, pady=5, side="top")
+    ttk.Label(prop_window, text=f"Создан: {ctime}").pack(padx=10, pady=5, side="top", anchor="w")
+    if not os.path.isdir(path):
+        ttk.Label(prop_window, text=f"Изменен: {mtime}").pack(padx=10, pady=5, side="top", anchor="w")
+        ttk.Label(prop_window, text=f"Открыт: {atime}").pack(padx=10, pady=5, side="top", anchor="w")
+
+    ttk.Separator(prop_window, orient="horizontal").pack(fill="x", padx=10, pady=5, side="top")
+    attrs_frame = Frame(prop_window)
+    attrs_frame.pack(fill="x", side="top")
+    ttk.Label(attrs_frame, text="Атрибуты:").pack(padx=10, pady=5, side="left")
+    var_readonly = IntVar()
+    var_readonly.set(readonly)
+    var_hidden = IntVar()
+    var_hidden.set(hidden)
+    cb_readonly = Checkbutton(attrs_frame, text="Только чтение", variable=var_readonly)
+    cb_hidden = Checkbutton(attrs_frame, text="Скрытый", variable=var_hidden)
+    cb_readonly.pack(padx=10, pady=5, side="left")
+    cb_hidden.pack(padx=10, pady=5, side="left")
+
+    def prop_apply():
+        new_name = os.path.join(location, entry.get())
+        try:
+            if os.path.exists(new_name) and entry.get() != name:
+                msbox.showerror("Ошибка", "Файл с таким именем уже существует")
+                prop_window.destroy()
+            else:
+                if entry.get():
+                    shutil.move(path, new_name)
+                    load_directory(current_path)
+                else:
+                    prop_window.destroy()
+        except Exception as e:
+            msbox.showerror("Ошибка", f"Не удалось переименовать: {e}")
+            prop_window.destroy()
+        
+        attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
+        
+        if var_readonly.get():
+            attrs |= 1
+        else:
+            attrs &= ~1
+        if var_hidden.get():
+            attrs |= 2
+        else:
+            attrs &= ~2
+        ctypes.windll.kernel32.SetFileAttributesW(new_name, attrs)
+
+        load_directory(current_path)
+        prop_window.destroy()
+
+    control_frame = Frame(prop_window)
+    control_frame.pack(fill="x", side="bottom")
+    Button(control_frame, text="Отмена", command=prop_window.destroy).pack(side="right", padx=5, pady=5)
+    Button(control_frame, text="Применить", command=prop_apply).pack(side="right", padx=5, pady=5)
 
 
 # УПРАВЛЕНИЕ ИНТЕРФЕЙСОМ
@@ -373,8 +481,9 @@ def show_context_menu(event):
         context_create_menu.add_command(label="Файл", command=create_file_dialog)
         context_create_menu.add_command(label="Папку", command=create_dir_dialog)
         context_menu.add_cascade(label="Создать", menu=context_create_menu)
-    context_menu.add_separator()
-    context_menu.add_command(label="Свойства", command=not_implemented)
+    if item:
+        context_menu.add_separator()
+        context_menu.add_command(label="Свойства", command=properties)
 
     context_menu.tk_popup(event.x_root, event.y_root)
     context_menu.grab_release()
@@ -390,7 +499,9 @@ root = Tk()
 root.title("PFM")
 center_window(root, 700, 500)
 set_icon(root)
-
+default_font = font.nametofont("TkDefaultFont")
+default_font.config(family="Segoe UI", size=10)
+root.option_add("*Font", default_font)
 
 # верхнее меню 
 top_menu = Menu(root)
@@ -401,7 +512,7 @@ file_create_menu = Menu(file_menu, tearoff=0)
 file_menu.add_cascade(label="Создать", menu=file_create_menu)
 file_create_menu.add_command(label="Файл", command=create_file_dialog)
 file_create_menu.add_command(label="Папку", command=create_dir_dialog)
-file_menu.add_command(label="Свойства", accelerator="Alt+Enter", command=not_implemented)
+file_menu.add_command(label="Свойства", accelerator="Alt+Enter", command=properties)
 
 file_menu.add_separator()
 file_menu.add_command(label="Параметры", command=not_implemented)
