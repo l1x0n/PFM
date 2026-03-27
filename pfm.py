@@ -36,7 +36,6 @@ def size_unit(size):
         if size < 1024:
             return f"{round(size, 2):g} {unit}"
         size /= 1024
-        return f"{round(size, 2):g} {unit}"
 
 def is_hidden(path):
     attrs = ctypes.windll.kernel32.GetFileAttributesW(path)
@@ -339,7 +338,7 @@ def rename_dialog(event=None):
     Button(control_frame, text="Отмена", command=rename_window.destroy).pack(side="right", padx=5, pady=5)
     Button(control_frame, text="Переименовать", command=rename_item).pack(side="right", padx=5, pady=5)
 
-def properties():
+def properties(event=None):
     selected = tree.selection()
     if not selected:
         return
@@ -369,7 +368,7 @@ def properties():
 
     prop_window = Toplevel(root)
     prop_window.title("Свойства")
-    center_window(prop_window, 400, 400)
+    center_window(prop_window, 400, 450)
     set_icon(prop_window)
     prop_window.focus_set()
 
@@ -454,14 +453,14 @@ def show_drive_frame():
         return 
     
     drive_frame = Frame(root, bg="white", relief="ridge", borderwidth=2)
-    drive_frame.place(x=34, y=33)
+    drive_frame.place(x=35, y=33)
 
     drive_frame.focus_set()
     drive_frame.bind("<FocusOut>", lambda e: show_drive_frame())
 
     drives = calc_drive()
     for d in drives:
-        btn = Button(drive_frame, text=d, anchor="w", width=2, relief="groove", 
+        btn = Button(drive_frame, text=d, font=("Sans-Serif", 10), anchor="w", width=2, relief="groove", 
             command=lambda path=d: change_drive(path))
         btn.pack(fill="x")
 
@@ -531,7 +530,6 @@ file_create_menu.add_command(label="Папку", command=create_dir_dialog)
 file_menu.add_command(label="Свойства", accelerator="Alt+Enter", command=properties)
 
 file_menu.add_separator()
-file_menu.add_command(label="Параметры", command=not_implemented)
 file_menu.add_command(label="Выход", accelerator="Alt+F4", command=root.quit)
 
 # правка
@@ -574,13 +572,12 @@ root.config(menu=top_menu)
 nav_frame = Frame(root, relief="flat", bg="white", bd=0)
 nav_frame.pack(fill="x")
 
-back_button = Button(nav_frame, text="↑", width=2, height=1, command=backward)
-back_button.pack(side="left", padx=5, pady=5)
+back_button = Button(nav_frame, text="↑", font=("Sans-Serif", 10), width=2, height=1, command=backward)
+back_button.pack(side="left", padx=[5,3], pady=5)
 
 drive_var = StringVar(value=current_path[0]+":\\")
-change_button = Button(nav_frame, textvariable=drive_var, width=2, command=show_drive_frame)
-change_button.pack(side="left", padx=[2, 3], pady=5)
-
+change_button = Button(nav_frame, textvariable=drive_var, font=("Sans-Serif", 10), width=2, command=show_drive_frame)
+change_button.pack(side="left", padx=[3,5], pady=5)
 drive_frame = None
 
 path_var = StringVar(value=current_path)
@@ -616,6 +613,7 @@ tree.bind("<Button-3>", show_context_menu)
 tree.bind("<Double-1>", open_item)
 tree.bind("<Delete>", delete_item)
 tree.bind("<F2>", rename_dialog)
+tree.bind("<Alt-Return>", properties)
 path_entry.bind("<Return>", entry_path_load)
 
 
