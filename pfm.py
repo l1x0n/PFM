@@ -15,6 +15,7 @@ clipboard = []
 is_cut = False
 locale.setlocale(locale.LC_TIME, 'rus_rus')
 
+
 # УТИЛИТЫ
 def center_window(win, width, height):
     screen_width = win.winfo_screenwidth()
@@ -477,6 +478,8 @@ def show_context_menu(event):
         context_menu.add_separator()
         context_menu.add_command(label="Переименовать", command=rename_dialog)
         context_menu.add_command(label="Удалить", command=delete_item)
+        context_menu.add_separator()
+        context_menu.add_command(label="Свойства", command=properties)
     else:
         tree.selection_remove(tree.selection())
         if clipboard:
@@ -491,24 +494,18 @@ def show_context_menu(event):
         context_sort_menu.add_radiobutton(label="По возрастанию", variable=view_order_var, command=lambda: load_directory(current_path))
         context_sort_menu.add_radiobutton(label="По убыванию", variable=view_order_var, command=lambda: load_directory(current_path))
         context_menu.add_cascade(label="Сортировка", menu=context_sort_menu)
+        context_menu.add_command(label="Обновить", accelerator="F5", command=lambda: load_directory(current_path))
         context_menu.add_separator()
         context_create_menu = Menu(context_menu, tearoff=0)
         context_create_menu.add_command(label="Файл", command=create_file_dialog)
         context_create_menu.add_command(label="Папку", command=create_dir_dialog)
         context_menu.add_cascade(label="Создать", menu=context_create_menu)
-    if item:
-        context_menu.add_separator()
-        context_menu.add_command(label="Свойства", command=properties)
 
     context_menu.tk_popup(event.x_root, event.y_root)
     context_menu.grab_release()
 
-# ЗАГЛУШКА
-def not_implemented():
-    msbox.showinfo("PFM", "Эта функция пока не реализована")
-
-
-# КОНФИГУРАЦИЯ И СТИЛИ
+# ФОРМИРОВАНИЕ ГРАФИЧЕСКОГО ИНТЕРФЕЙСА
+# конфигурация и стили
 ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
 root = Tk()
@@ -520,7 +517,7 @@ default_font.config(family="Segoe UI", size=10)
 root.option_add("*Font", default_font)
 
 
-# ГЛАВНОЕ МЕНЮ
+# главное меню
 top_menu = Menu(root)
 
 # файл
@@ -558,6 +555,7 @@ view_order_var = StringVar(value="По убыванию")
 view_sort_menu.add_radiobutton(label="По возрастанию", variable=view_order_var, command=lambda: load_directory(current_path))
 view_sort_menu.add_radiobutton(label="По убыванию", variable=view_order_var, command=lambda: load_directory(current_path))
 view_menu.add_cascade(label="Сортировка", menu=view_sort_menu)
+view_menu.add_command(label="Обновить", accelerator="F5", command=lambda: load_directory(current_path))
 
 view_menu.add_separator()
 view_show_hidden = BooleanVar()
@@ -570,7 +568,7 @@ top_menu.add_cascade(label="Вид", menu=view_menu)
 root.config(menu=top_menu)
 
 
-# ПАНЕЛЬ НАВИГАЦИИ
+# панель навигации
 nav_frame = Frame(root, relief="flat", bg="white", bd=0)
 nav_frame.pack(fill="x")
 
@@ -587,7 +585,7 @@ path_entry = Entry(nav_frame, textvariable=path_var)
 path_entry.pack(side="left", fill="x", expand=True, padx=5)
 
 
-# ДРЕВО ФАЙЛОВ
+# древо файлов
 tree_frame = Frame(root)
 tree_frame.pack(fill="both", expand=True)
 
@@ -605,7 +603,7 @@ tree.column("size", width=100, minwidth=80, anchor="e")
 tree.pack(fill="both", expand=True)
 
 
-# ГОРЯЧИЕ КЛАВИШИ И СОБЫТИЯ
+# горячие клавиши и события
 context_menu = Menu(root, tearoff=0)
 
 root.bind("<Control-c>", copy)
@@ -620,6 +618,6 @@ tree.bind("<Alt-Return>", properties)
 path_entry.bind("<Return>", entry_path_load)
 
 
-# ЗАПУСК
+# запуск
 load_directory(current_path)
 root.mainloop()
