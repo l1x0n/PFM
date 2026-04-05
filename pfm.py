@@ -508,6 +508,7 @@ def not_implemented():
     msbox.showinfo("PFM", "Эта функция пока не реализована")
 
 
+# КОНФИГУРАЦИЯ И СТИЛИ
 ctypes.windll.shcore.SetProcessDpiAwareness(True)
 
 root = Tk()
@@ -518,7 +519,8 @@ default_font = font.nametofont("TkDefaultFont")
 default_font.config(family="Segoe UI", size=10)
 root.option_add("*Font", default_font)
 
-# верхнее меню 
+
+# ГЛАВНОЕ МЕНЮ
 top_menu = Menu(root)
 
 # файл
@@ -568,7 +570,7 @@ top_menu.add_cascade(label="Вид", menu=view_menu)
 root.config(menu=top_menu)
 
 
-# навигация
+# ПАНЕЛЬ НАВИГАЦИИ
 nav_frame = Frame(root, relief="flat", bg="white", bd=0)
 nav_frame.pack(fill="x")
 
@@ -584,7 +586,8 @@ path_var = StringVar(value=current_path)
 path_entry = Entry(nav_frame, textvariable=path_var)
 path_entry.pack(side="left", fill="x", expand=True, padx=5)
 
-# древо файлов
+
+# ДРЕВО ФАЙЛОВ
 tree_frame = Frame(root)
 tree_frame.pack(fill="both", expand=True)
 
@@ -601,10 +604,10 @@ tree.column("type", width=100, minwidth=80, anchor="center")
 tree.column("size", width=100, minwidth=80, anchor="e")
 tree.pack(fill="both", expand=True)
 
-# контекстное меню
+
+# ГОРЯЧИЕ КЛАВИШИ И СОБЫТИЯ
 context_menu = Menu(root, tearoff=0)
 
-#бинды
 root.bind("<Control-c>", copy)
 root.bind("<Control-x>", cut)
 root.bind("<Control-v>", paste)
@@ -617,5 +620,6 @@ tree.bind("<Alt-Return>", properties)
 path_entry.bind("<Return>", entry_path_load)
 
 
+# ЗАПУСК
 load_directory(current_path)
 root.mainloop()
